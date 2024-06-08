@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management System with CRUD and Validation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 400px;
+            margin: 0 auto;
+            text-align: center;
+            background-color: cyan;
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 12px 40px 0 rgba(0, 0, 0, 0.19);
+        }
+        .user-form input, .delete-form input {
+            display: block;
+            width: calc(100% - 22px);
+            margin: 10px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .user-form button, .delete-form button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .user-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .user-list li {
+            background: #f4f4f4;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .user-list button {
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .editButton, .removeButton {
+            margin-left: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .removeButton {
+            background-color: #dc3545;
+        }
+        .error {
+            color: red;
+            font-size: 0.9em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>User Management System with CRUD and Validation</h1>
+        <div class="user-form">
+            <input type="text" id="nameInput" placeholder="Enter name">
+            <div id="nameError" class="error"></div>
+
+            <input type="number" id="ageInput" placeholder="Enter age">
+            <div id="ageError" class="error"></div>
+
+            <input type="email" id="emailInput" placeholder="Enter email">
+            <div id="emailError" class="error"></div>
+
+            <input type="password" id="passwordInput" placeholder="Enter password">
+            <div id="passwordError" class="error"></div>
+
+            <button onclick="addUser()">Add User</button>
+        </div>
+        <div class="delete-form">
+            <input type="text" id="deleteNameInput" placeholder="Enter name to delete">
+            <div id="deleteNameError" class="error"></div>
+            <button onclick="deleteUserByName()">Delete User by Name</button>
+        </div>
+
+        <div class="user-list">
+            <ul id="userList"></ul>
+            <button onclick="clearUsers()">Clear All Users</button>
+            
+        </div>
+    </div>
+    <script>
+        function addUser() {
+            const nameInput = document.getElementById('nameInput');
+            const ageInput = document.getElementById('ageInput');
+            const emailInput = document.getElementById('emailInput');
+            const passwordInput = document.getElementById('passwordInput');
+
+            const name = nameInput.value.trim();
+            const age = ageInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            // Validation
+            const nameError = validateName(name);
+            const ageError = validateAge(age);
+            const emailError = validateEmail(email);
+            const passwordError = validatePassword(password);
+
+            document.getElementById('nameError').textContent = nameError;
+            document.getElementById('ageError').textContent = ageError;
+            document.getElementById('emailError').textContent = emailError;
+            document.getElementById('passwordError').textContent = passwordError;
+
+            if (nameError || ageError || emailError || passwordError) {
+                return; // Exit if validation fails
+            }
+
+            const user = { name, age, email, password };
+
+            if (nameInput.dataset.index) {
+                // Update existing user
+                updateUser(nameInput.dataset.index, user);
+            } else {
+                // Save new user
+                saveUser(user);
+            }
+
+            // Clear input fields
+            nameInput.value = '';
+            ageInput.value = '';
+            emailInput.value = '';
+            passwordInput.value = '';
+            delete nameInput.dataset.index;
+        }
+
+        function saveUser(user) {
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users.push(user);
+            localStorage.setItem('users', JSON.stringify(users));
+            renderUsers();
+        }
+
+        function renderUsers() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            users.forEach((user, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Name: ${user.name}, Age: ${user.age}, Email: ${user.email}`;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.className = 'editButton';
+                editButton.onclick = function() {
+                    editUser(index);
+                };
+
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.className = 'removeButton';
+                removeButton.onclick = function() {
+                    removeUser(index);
+                };
+
+                li.appendChild(editButton);
+                li.appendChild(removeButton);
+                userList.appendChild(li);
+            });
+        }
+
+        function removeUser(index) {
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users.splice(index, 1);
+            localStorage.setItem('users', JSON.stringify(users));
+            renderUsers();
+        }
+
+        function clearUsers() {
+            localStorage.removeItem('users');
+            renderUsers();
+        }
+
+        function editUser(index) {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users[index];
+
+            const nameInput = document.getElementById('nameInput');
+            const ageInput = document.getElementById('ageInput');
+            const emailInput = document.getElementById('emailInput');
+            const passwordInput = document.getElementById('passwordInput');
+
+            nameInput.value = user.name;
+            ageInput.value = user.age;
+            emailInput.value = user.email;
+            passwordInput.value = user.password;
+
+            nameInput.dataset.index = index;
+        }
+
+        function updateUser(index, newUser) {
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users[index] = newUser;
+            localStorage.setItem('users', JSON.stringify(users));
+            renderUsers();
+        }
+
+        // New function to delete a user by name
+        function deleteUserByName() {
+            const nameInput = document.getElementById('deleteNameInput');
+            const nameToDelete = nameInput.value.trim();
+            const deleteNameError = document.getElementById('deleteNameError');
+
+            if (nameToDelete === '') {
+                deleteNameError.textContent = 'Please enter a name.';
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            const initialLength = users.length;
+
+            users = users.filter(user => user.name.toLowerCase() !== nameToDelete.toLowerCase());
+
+            if (users.length === initialLength) {
+                deleteNameError.textContent = 'No user found with this name.';
+            } else {
+                deleteNameError.textContent = '';
+                localStorage.setItem('users', JSON.stringify(users));
+                renderUsers();
+                nameInput.value = '';
+            }
+        }
+
+        // Validation functions
+        function validateName(name) {
+            if (name === '') {
+                return 'Name is required';
+            }
+            if (!/^[a-zA-Z\s]+$/.test(name)) {
+                return 'Name can only contain letters and spaces';
+            }
+            return '';
+        }
+
+        function validateAge(age) {
+            const ageNumber = Number(age);
+            if (age === '') {
+                return 'Age is required';
+            }
+            if (isNaN(ageNumber) || ageNumber <= 18 || ageNumber > 120) {
+                return 'Age must be a number between 18 and 120';
+            }
+            return '';
+        }
+
+        function validateEmail(email) {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (email === '') {
+                return 'Email is required';
+            }
+            if (!emailPattern.test(email)) {
+                return 'Email is not valid';
+            }
+            return '';
+        }
+
+        function validatePassword(password) {
+            if (password === '') {
+                return 'Password is required';
+            }
+            if (password.length < 6) {
+                return 'Password must be at least 6 characters long';
+            }
+            return '';
+        }
+
+        document.addEventListener('DOMContentLoaded', renderUsers);
+    </script>
+</body>
+</html>
